@@ -1,0 +1,30 @@
+'use client';
+// ============================================================
+// Saluty — Auth guard. Wraps a page; if no session, redirects to /login.
+// ============================================================
+import { useEffect, type ReactNode } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useUser } from '@/lib/auth';
+
+export default function AuthGuard({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { user, loading } = useUser();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      const from = encodeURIComponent(pathname || '/');
+      router.replace(`/login?from=${from}`);
+    }
+  }, [loading, user, pathname, router]);
+
+  if (loading || !user) {
+    return (
+      <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', gap: 12 }}>
+        <div className="spinner" />
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}

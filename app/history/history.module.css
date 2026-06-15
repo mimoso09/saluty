@@ -1,0 +1,101 @@
+.history {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.header {
+  padding-top: var(--space-sm);
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  font-size: 15px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 20px;
+  gap: 12px;
+}
+
+.emptyIcon {
+  font-size: 48px;
+  margin-bottom: 8px;
+}
+
+.emptyTitle {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.emptyDesc {
+  font-size: 15px;
+  color: var(--text-secondary);
+  max-width: 280px;
+  line-height: 1.5;
+}
+
+.historyList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.historyCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  transition: all var(--transition-fast);
+}
+
+.historyCard:hover {
+  transform: translateX(4px);
+  border-color: var(--border-brand);
+}
+
+.cardLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.productName {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.date {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.scoreBadge {
+  display: flex;
+  align-items: baseline;
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+}
+
+.scoreNum {
+  font-size: 18px;
+  font-weight: 800;
+  font-family: var(--font-display);
+}
+
+.scoreDen {
+  font-size: 11px;
+  opacity: 0.7;
+}

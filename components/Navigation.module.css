@@ -1,0 +1,84 @@
+.nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: var(--max-width);
+  height: 72px;
+  background: rgba(17, 17, 24, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 var(--space-sm);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  z-index: 100;
+}
+
+.navItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  padding: var(--space-sm);
+  color: var(--text-muted);
+  transition: color var(--transition-fast);
+  position: relative;
+}
+
+.navItem:active {
+  transform: scale(0.92);
+}
+
+.navItem.active {
+  color: var(--brand-primary);
+}
+
+.iconWrap {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+/* Scan button — special elevated CTA */
+.scanItem {
+  flex: 1.2;
+  margin-bottom: 8px;
+}
+
+.scanButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  background: var(--brand-gradient);
+  border-radius: 50%;
+  color: white;
+  box-shadow: 0 4px 20px rgba(0, 212, 170, 0.35);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.scanItem:active .scanButton {
+  transform: scale(0.92);
+  box-shadow: 0 2px 10px rgba(0, 212, 170, 0.25);
+}
+
+@media (min-width: 768px) {
+  .nav {
+    max-width: var(--max-width-lg);
+  }
+}
