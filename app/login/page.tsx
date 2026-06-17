@@ -3,6 +3,7 @@
 // Saluty — Login / Sign up
 // ============================================================
 import { Suspense, useEffect, useState } from 'react';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AuthError, signIn, signUp, useUser } from '@/lib/auth';
 import styles from './login.module.css';
@@ -28,21 +29,30 @@ function LoginContent() {
     if (!loading && user) router.replace(from);
   }, [loading, user, from, router]);
 
+  const switchMode = (next: Mode) => {
+    setMode(next);
+    setError(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
     try {
       if (mode === 'signup') {
-        signUp({ name, email, password });
+        await signUp({ name, email, password });
       } else {
-        signIn({ email, password });
+        await signIn({ email, password });
       }
       router.replace(from);
     } catch (err) {
-      const msg = err instanceof AuthError ? err.message : err instanceof Error ? err.message : 'Algo salió mal.';
+      const msg =
+        err instanceof AuthError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'Algo salió mal. Inténtalo de nuevo.';
       setError(msg);
-    } finally {
       setSubmitting(false);
     }
   };
@@ -51,9 +61,9 @@ function LoginContent() {
     <main className={styles.shell}>
       <div className={styles.glow} aria-hidden />
 
-      <div className={styles.brand}>
-        <div className={styles.logoBadge}>
-          <span aria-hidden>🥗</span>
+      <div className={`${styles.brand} animate-fade-in`}>
+        <div className={styles.logoBadge} aria-hidden>
+          <Image src="/logo.jpg" alt="" width={88} height={88} priority />
         </div>
         <h1 className={styles.brandName}>
           Salu<span className="gradient-text">ty</span>
@@ -61,14 +71,14 @@ function LoginContent() {
         <p className={styles.brandTag}>Evalúa lo que comes con IA</p>
       </div>
 
-      <div className={styles.card}>
-        <div className={styles.tabs} role="tablist">
+      <div className={`${styles.card} animate-fade-in`}>
+        <div className={styles.tabs} role="tablist" aria-label="Modo de autenticación">
           <button
             type="button"
             role="tab"
             aria-selected={mode === 'signin'}
             className={`${styles.tab} ${mode === 'signin' ? styles.tabActive : ''}`}
-            onClick={() => { setMode('signin'); setError(null); }}
+            onClick={() => switchMode('signin')}
           >
             Iniciar sesión
           </button>
@@ -77,7 +87,7 @@ function LoginContent() {
             role="tab"
             aria-selected={mode === 'signup'}
             className={`${styles.tab} ${mode === 'signup' ? styles.tabActive : ''}`}
-            onClick={() => { setMode('signup'); setError(null); }}
+            onClick={() => switchMode('signup')}
           >
             Crear cuenta
           </button>
@@ -95,6 +105,7 @@ function LoginContent() {
                 onChange={(e) => setName(e.target.value)}
                 autoComplete="name"
                 autoCapitalize="words"
+                required
               />
             </label>
           )}
@@ -110,6 +121,7 @@ function LoginContent() {
               autoComplete={mode === 'signup' ? 'email' : 'username'}
               inputMode="email"
               autoCapitalize="none"
+              required
             />
           </label>
 
@@ -123,6 +135,8 @@ function LoginContent() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                required
+                minLength={6}
               />
               <button
                 type="button"
@@ -154,15 +168,25 @@ function LoginContent() {
 
         <p className={styles.swap}>
           {mode === 'signin' ? (
-            <>¿No tienes cuenta? <button type="button" className={styles.swapBtn} onClick={() => { setMode('signup'); setError(null); }}>Regístrate</button></>
+            <>
+              ¿No tienes cuenta?{' '}
+              <button type="button" className={styles.swapBtn} onClick={() => switchMode('signup')}>
+                Regístrate
+              </button>
+            </>
           ) : (
-            <>¿Ya tienes cuenta? <button type="button" className={styles.swapBtn} onClick={() => { setMode('signin'); setError(null); }}>Inicia sesión</button></>
+            <>
+              ¿Ya tienes cuenta?{' '}
+              <button type="button" className={styles.swapBtn} onClick={() => switchMode('signin')}>
+                Inicia sesión
+              </button>
+            </>
           )}
         </p>
       </div>
 
       <p className={styles.footer}>
-        Al continuar aceptas que esta es una versión demo y tu cuenta se guarda solo en este dispositivo.
+        Esta es una versión demo. Tu cuenta se guarda solo en este dispositivo.
       </p>
     </main>
   );
@@ -170,7 +194,13 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className="spinner" /></div>}>
+    <Suspense
+      fallback={
+        <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="spinner spinner-lg" />
+        </div>
+      }
+    >
       <LoginContent />
     </Suspense>
   );

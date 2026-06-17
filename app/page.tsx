@@ -1,95 +1,109 @@
 // ============================================================
 // Saluty — Home Page
 // ============================================================
+import Image from 'next/image';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import AuthGuard from '@/components/AuthGuard';
 import styles from './home.module.css';
 
 const SAMPLE_FOODS = [
-  { emoji: '🍎', name: 'Manzana', score: 9, color: '#00d4aa' },
-  { emoji: '🥤', name: 'Refresco Cola', score: 2, color: '#ef4444' },
-  { emoji: '🥑', name: 'Aguacate', score: 9, color: '#00d4aa' },
-  { emoji: '🍫', name: 'Chocolate Leche', score: 4, color: '#f97316' },
-  { emoji: '🥣', name: 'Granola', score: 6, color: '#facc15' },
-  { emoji: '🍕', name: 'Pizza', score: 3, color: '#f97316' },
+  { emoji: '🥑', name: 'Aguacate', score: 9, color: 'var(--score-excellent)' },
+  { emoji: '🥣', name: 'Granola natural', score: 7, color: 'var(--score-good)' },
+  { emoji: '🍫', name: 'Chocolate con leche', score: 4, color: 'var(--score-bad)' },
+  { emoji: '🥤', name: 'Refresco cola', score: 2, color: 'var(--score-terrible)' },
+  { emoji: '🥗', name: 'Ensalada verde', score: 10, color: 'var(--score-excellent)' },
+  { emoji: '🍕', name: 'Pizza congelada', score: 3, color: 'var(--score-bad)' },
+];
+
+const QUICK_ACTIONS = [
+  { tab: 'barcode', emoji: '📷', label: 'Escanear', desc: 'Código de barras' },
+  { tab: 'image', emoji: '🖼️', label: 'Foto', desc: 'Etiqueta o producto' },
+  { tab: 'text', emoji: '✏️', label: 'Texto', desc: 'Nombre o marca' },
+  { tab: 'ingredients', emoji: '📋', label: 'Lista', desc: 'Ingredientes' },
+];
+
+const STEPS = [
+  {
+    step: '1',
+    title: 'Ingresa tu comida',
+    desc: 'Una foto, el código de barras, el nombre o los ingredientes.',
+  },
+  {
+    step: '2',
+    title: 'La IA analiza al instante',
+    desc: 'Evaluamos nutrición, ingredientes y nivel de procesamiento.',
+  },
+  {
+    step: '3',
+    title: 'Recibe tu Score',
+    desc: 'Una calificación clara del 1 al 10 con alternativas más saludables.',
+  },
 ];
 
 export default function HomePage() {
   return (
     <AuthGuard>
       <main className={`page-content ${styles.home}`}>
-        {/* Header */}
         <header className={styles.header}>
           <div className={styles.logo}>
-            <span className={styles.logoIcon}>🥗</span>
+            <span className={styles.logoIcon} aria-hidden>
+              <Image src="/logo.jpg" alt="" width={36} height={36} priority />
+            </span>
             <span className={styles.logoText}>Saluty</span>
           </div>
-          <Link href="/profile" className={styles.avatarBtn} aria-label="Perfil">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <Link href="/profile" className={styles.avatarBtn} aria-label="Ver perfil">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
               <circle cx="12" cy="7" r="4" />
             </svg>
           </Link>
         </header>
 
-        {/* Hero */}
         <section className={`${styles.hero} animate-fade-in`}>
           <div className={styles.heroBadge}>
-            <span className={styles.heroBadgeDot} />
+            <span className={styles.heroBadgeDot} aria-hidden />
             Análisis con IA
           </div>
           <h1 className={styles.heroTitle}>
             ¿Qué tan{' '}
             <span className="gradient-text">saludable</span>
-            {' '}es tu comida?
+            {' '}es lo que comes?
           </h1>
           <p className={styles.heroSubtitle}>
-            Sube una foto, escribe el nombre o pega los ingredientes.
-            Nuestra IA analiza todo al instante.
+            Descubre en segundos el impacto real de cada alimento. Sin etiquetas confusas.
           </p>
           <Link href="/scan" className={`btn-primary ${styles.heroBtn}`}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <circle cx="11" cy="11" r="8" />
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="7" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
             Analizar ahora
           </Link>
         </section>
 
-        {/* Quick actions */}
         <section className={styles.quickActions}>
-          <p className="section-label">Analizar con</p>
-          <div className={styles.actionGrid}>
-            <Link href="/scan?tab=image" className={`glass-card ${styles.actionCard}`}>
-              <span className={styles.actionEmoji}>📸</span>
-              <span className={styles.actionLabel}>Foto</span>
-            </Link>
-            <Link href="/scan?tab=text" className={`glass-card ${styles.actionCard}`}>
-              <span className={styles.actionEmoji}>✏️</span>
-              <span className={styles.actionLabel}>Texto</span>
-            </Link>
-            <Link href="/scan?tab=ingredients" className={`glass-card ${styles.actionCard}`}>
-              <span className={styles.actionEmoji}>📋</span>
-              <span className={styles.actionLabel}>Ingredientes</span>
-            </Link>
-            <Link href="/scan?tab=nutrition_table" className={`glass-card ${styles.actionCard}`}>
-              <span className={styles.actionEmoji}>📊</span>
-              <span className={styles.actionLabel}>Tabla</span>
-            </Link>
+          <p className="section-label">Empezar con</p>
+          <div className={`${styles.actionGrid} stagger`}>
+            {QUICK_ACTIONS.map((a) => (
+              <Link
+                key={a.tab}
+                href={`/scan?tab=${a.tab}`}
+                className={`glass-card ${styles.actionCard} animate-fade-in`}
+              >
+                <span className={styles.actionEmoji} aria-hidden>{a.emoji}</span>
+                <span className={styles.actionLabel}>{a.label}</span>
+                <span className={styles.actionDesc}>{a.desc}</span>
+              </Link>
+            ))}
           </div>
         </section>
 
-        {/* How it works */}
         <section className={styles.howItWorks}>
           <p className="section-label">Cómo funciona</p>
           <div className={`glass-card ${styles.stepsCard}`}>
-            {[
-              { step: '1', title: 'Ingresa tu comida', desc: 'Foto, nombre, ingredientes o tabla nutricional' },
-              { step: '2', title: 'IA analiza todo', desc: 'Claude evalúa nutrición, procesamiento e ingredientes' },
-              { step: '3', title: 'Recibe tu Score', desc: 'Calificación del 1-10 con explicación y alternativas' },
-            ].map((item, i) => (
-              <div key={i} className={styles.step}>
+            {STEPS.map((item) => (
+              <div key={item.step} className={styles.step}>
                 <div className={styles.stepNum}>{item.step}</div>
                 <div>
                   <p className={styles.stepTitle}>{item.title}</p>
@@ -100,16 +114,20 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Sample scores */}
         <section className={styles.sampleSection}>
           <div className={styles.sampleHeader}>
-            <p className="section-label">Ejemplos de análisis</p>
-            <Link href="/history" className={styles.seeAll}>Ver historial →</Link>
+            <p className="section-label">Ejemplos reales</p>
+            <Link href="/history" className={styles.seeAll}>
+              Mi historial
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </Link>
           </div>
           <div className={styles.sampleScroll}>
-            {SAMPLE_FOODS.map((food, i) => (
-              <div key={i} className={`glass-card ${styles.sampleCard}`}>
-                <span className={styles.sampleEmoji}>{food.emoji}</span>
+            {SAMPLE_FOODS.map((food) => (
+              <div key={food.name} className={`glass-card ${styles.sampleCard}`}>
+                <span className={styles.sampleEmoji} aria-hidden>{food.emoji}</span>
                 <p className={styles.sampleName}>{food.name}</p>
                 <div className={styles.sampleScore} style={{ color: food.color }}>
                   <span className={styles.sampleScoreNum}>{food.score}</span>

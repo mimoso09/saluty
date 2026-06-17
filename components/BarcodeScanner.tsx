@@ -119,7 +119,9 @@ export default function BarcodeScanner({ onScan, onCancel, stream }: Props) {
       <div className={styles.viewport}>
         <video ref={videoRef} className={styles.video} playsInline muted autoPlay />
         <div className={styles.frame} aria-hidden="true">
-          <div className={styles.targetBox} />
+          <div className={styles.targetBox}>
+            <span />
+          </div>
           <div className={styles.scanLine} />
         </div>
 

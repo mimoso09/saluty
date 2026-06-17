@@ -1,43 +1,32 @@
 // ============================================================
-// Saluty — Analysis Response Parser
+// Saluty — Analysis Response Parser / Normalizer
 // ============================================================
 import type { AnalysisResult, ProcessingLevel } from '@/types/analysis';
 
+const VALID_LEVELS: ProcessingLevel[] = [
+  'natural',
+  'mínimamente procesado',
+  'procesado',
+  'ultraprocesado',
+];
+
+const VALID_SEVERITIES = ['low', 'medium', 'high'] as const;
+
 /**
- * Parses Claude's raw JSON response into a typed AnalysisResult.
- * Handles edge cases like markdown fences or extra text.
+ * Normalize the structured object returned by Claude (either from tool_use
+ * input or parsed text JSON) into a strict AnalysisResult.
  */
-export function parseAnalysisResponse(raw: string): AnalysisResult {
-  // Strip markdown code fences if Claude adds them
-  let cleaned = raw.trim();
-  if (cleaned.startsWith('```')) {
-    cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
-  }
-
-  let parsed: Record<string, unknown>;
-  try {
-    parsed = JSON.parse(cleaned);
-  } catch {
-    throw new Error(`Claude returned invalid JSON: ${cleaned.slice(0, 200)}`);
-  }
-
-  // Validate saluty score (null when Claude can't honestly evaluate)
+export function normalizeAnalysis(parsed: Record<string, unknown>): AnalysisResult {
   let score: number | null;
-  if (parsed.salutyScore === null || parsed.salutyScore === undefined) {
+  const rawScore = parsed.salutyScore;
+  if (rawScore === null || rawScore === undefined) {
     score = null;
   } else {
-    const n = Number(parsed.salutyScore);
-    score = isNaN(n) ? null : Math.max(1, Math.min(10, Math.round(n)));
+    const n = Number(rawScore);
+    score = Number.isNaN(n) ? null : Math.max(1, Math.min(10, Math.round(n)));
   }
 
-  // Normalize processing level
-  const validLevels: ProcessingLevel[] = [
-    'natural',
-    'mínimamente procesado',
-    'procesado',
-    'ultraprocesado',
-  ];
-  const level = validLevels.includes(parsed.processingLevel as ProcessingLevel)
+  const level = VALID_LEVELS.includes(parsed.processingLevel as ProcessingLevel)
     ? (parsed.processingLevel as ProcessingLevel)
     : 'procesado';
 
@@ -69,7 +58,7 @@ export function parseAnalysisResponse(raw: string): AnalysisResult {
     problematicIngredients: problematic.map((ing: Record<string, unknown>) => ({
       name: String(ing.name || ''),
       reason: String(ing.reason || ''),
-      severity: ['low', 'medium', 'high'].includes(ing.severity as string)
+      severity: VALID_SEVERITIES.includes(ing.severity as 'low' | 'medium' | 'high')
         ? (ing.severity as 'low' | 'medium' | 'high')
         : 'medium',
     })),
@@ -89,7 +78,52 @@ export function parseAnalysisResponse(raw: string): AnalysisResult {
   };
 }
 
+/**
+ * Legacy parser for raw text JSON responses (kept for compatibility).
+ */
+export function parseAnalysisResponse(raw: string): AnalysisResult {
+  let cleaned = raw.trim();
+  if (cleaned.startsWith('```')) {
+    cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+  }
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch {
+    throw new Error(`Claude returned invalid JSON: ${cleaned.slice(0, 200)}`);
+  }
+  return normalizeAnalysis(parsed);
+}
+
 function toNumber(val: unknown): number | undefined {
+  if (val === null || val === undefined) return undefined;
   const n = Number(val);
-  return isNaN(n) ? undefined : n;
+  return Number.isNaN(n) ? undefined : n;
+}
+
+/**
+ * Extract a string field from incomplete JSON (used while streaming partial
+ * tool input). Returns null if the field isn't yet present.
+ */
+export function peekStringField(partial: string, field: string): string | null {
+  const re = new RegExp(`"${field}"\\s*:\\s*"((?:\\\\.|[^"\\\\])*)"`, 'i');
+  const match = partial.match(re);
+  return match ? unescapeJsonString(match[1]) : null;
+}
+
+export function peekNumberField(partial: string, field: string): number | null {
+  const re = new RegExp(`"${field}"\\s*:\\s*(-?\\d+(?:\\.\\d+)?|null)`, 'i');
+  const match = partial.match(re);
+  if (!match) return null;
+  if (match[1] === 'null') return null;
+  const n = Number(match[1]);
+  return Number.isNaN(n) ? null : n;
+}
+
+function unescapeJsonString(s: string): string {
+  return s
+    .replace(/\\n/g, '\n')
+    .replace(/\\t/g, '\t')
+    .replace(/\\"/g, '"')
+    .replace(/\\\\/g, '\\');
 }

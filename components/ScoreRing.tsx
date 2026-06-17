@@ -2,109 +2,115 @@
 // ============================================================
 // Saluty — Score Ring (Animated SVG)
 // ============================================================
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styles from './ScoreRing.module.css';
 
 interface ScoreRingProps {
   score: number | null;
   color: string;
+  size?: number;
 }
 
-export default function ScoreRing({ score, color }: ScoreRingProps) {
-  const [animatedScore, setAnimatedScore] = useState(0);
-  const [animated, setAnimated] = useState(false);
-
-  const radius = 70;
+export default function ScoreRing({ score, color, size = 188 }: ScoreRingProps) {
+  const stroke = 14;
+  const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
-  const progress = score === null ? 0 : (score / 10) * circumference;
-  const offset = circumference - progress;
+  const offset = score === null ? circumference : circumference - (score / 10) * circumference;
+  const center = size / 2;
 
-  useEffect(() => {
-    if (score === null) {
-      setAnimated(false);
-      setAnimatedScore(0);
-      return;
-    }
-    const target = score;
-    const timer = setTimeout(() => {
-      setAnimated(true);
-      let current = 0;
-      const step = target / 25;
-      const interval = setInterval(() => {
-        current += step;
-        if (current >= target) {
-          setAnimatedScore(target);
-          clearInterval(interval);
-        } else {
-          setAnimatedScore(Math.floor(current));
-        }
-      }, 30);
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [score]);
+  const displayedScore = useAnimatedNumber(score ?? 0, 900);
 
   return (
-    <div className={styles.wrapper}>
-      <svg width="180" height="180" viewBox="0 0 180 180" className={styles.svg}>
-        {/* Background track */}
+    <div className={styles.wrapper} style={{ width: size, height: size }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className={styles.svg}>
         <circle
-          cx="90"
-          cy="90"
+          cx={center}
+          cy={center}
           r={radius}
           fill="none"
           stroke="rgba(255,255,255,0.06)"
-          strokeWidth="12"
+          strokeWidth={stroke}
         />
-        {/* Progress arc */}
         <circle
-          cx="90"
-          cy="90"
+          cx={center}
+          cy={center}
           r={radius}
           fill="none"
           stroke={color}
-          strokeWidth="12"
+          strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={circumference}
-          strokeDashoffset={animated ? offset : circumference}
-          transform="rotate(-90 90 90)"
+          strokeDashoffset={offset}
+          transform={`rotate(-90 ${center} ${center})`}
           style={{
-            transition: 'stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1)',
-            filter: `drop-shadow(0 0 8px ${color}60)`,
+            transition: 'stroke-dashoffset 0.9s cubic-bezier(0.16, 1, 0.3, 1)',
+            filter: `drop-shadow(0 0 10px ${color}60)`,
           }}
         />
-        {/* Score number */}
         <text
-          x="90"
-          y={score === null ? '98' : '82'}
+          x={center}
+          y={score === null ? center + 8 : center - 6}
           textAnchor="middle"
           fill={color}
-          fontSize={score === null ? '52' : '36'}
+          fontSize={score === null ? '54' : '40'}
           fontWeight="800"
-          fontFamily="Space Grotesk, Inter, sans-serif"
-          style={{ letterSpacing: '-1px' }}
+          fontFamily="-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif"
+          style={{ letterSpacing: '-0.04em' }}
         >
-          {score === null ? '?' : animatedScore}
+          {score === null ? '?' : displayedScore}
         </text>
-        {/* /10 */}
         {score !== null && (
           <text
-            x="90"
-            y="104"
+            x={center}
+            y={center + 22}
             textAnchor="middle"
-            fill="rgba(255,255,255,0.35)"
+            fill="rgba(255,255,255,0.4)"
             fontSize="14"
-            fontWeight="500"
-            fontFamily="Inter, sans-serif"
+            fontWeight="600"
+            fontFamily="-apple-system, BlinkMacSystemFont, sans-serif"
+            style={{ letterSpacing: '0.04em' }}
           >
             / 10
           </text>
         )}
       </svg>
-      {/* Glow effect */}
       <div
         className={styles.glow}
-        style={{ background: `radial-gradient(circle, ${color}20 0%, transparent 70%)` }}
+        style={{ background: `radial-gradient(circle, ${color}26 0%, transparent 70%)` }}
       />
     </div>
   );
+}
+
+/**
+ * Animates a number from 0 → target using requestAnimationFrame.
+ * setState happens inside RAF callbacks, never directly in the effect body.
+ */
+function useAnimatedNumber(target: number, duration: number): number {
+  const [value, setValue] = useState(0);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    const startTime = performance.now();
+
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - startTime) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setValue(Math.round(target * eased));
+      if (t < 1) {
+        rafRef.current = requestAnimationFrame(tick);
+      } else {
+        rafRef.current = null;
+      }
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    };
+  }, [target, duration]);
+
+  return value;
 }

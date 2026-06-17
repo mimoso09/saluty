@@ -2,13 +2,13 @@
 // ============================================================
 // Saluty — Result Page (Animated Score + Full Analysis)
 // ============================================================
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import ScoreRing from '@/components/ScoreRing';
+import { useAnalysisById, type StoredAnalysis } from '@/lib/history';
 import styles from './result.module.css';
-import type { AnalysisResult } from '@/types/analysis';
 import {
   getScoreLabel,
   getScoreColor,
@@ -18,24 +18,25 @@ import {
 
 export default function ResultPage() {
   const router = useRouter();
-  const [result, setResult] = useState<AnalysisResult | null>(null);
-  const [mounted, setMounted] = useState(false);
+  const params = useParams<{ id: string }>();
+  const result = useAnalysisById(params.id);
 
   useEffect(() => {
-    const stored = sessionStorage.getItem('saluty_result');
-    if (!stored) {
-      router.push('/scan');
-      return;
+    if (typeof window === 'undefined') return;
+    if (result === null) {
+      const timer = setTimeout(() => {
+        // Give the store one tick to hydrate before redirecting
+        router.replace('/scan');
+      }, 200);
+      return () => clearTimeout(timer);
     }
-    setResult(JSON.parse(stored));
-    setMounted(true);
-  }, [router]);
+  }, [result, router]);
 
-  if (!result || !mounted) {
+  if (!result) {
     return (
       <div className={styles.loadingState}>
-        <div className="spinner" style={{ width: 32, height: 32 }} />
-        <p>Cargando análisis...</p>
+        <div className="spinner spinner-lg" />
+        <p>Cargando análisis…</p>
       </div>
     );
   }
@@ -46,27 +47,22 @@ export default function ResultPage() {
   return (
     <>
       <main className={`page-content ${styles.result}`}>
-        {/* Top bar */}
         <div className={styles.topBar}>
           <button
-            onClick={() => router.push('/scan')}
-            className={styles.backBtn}
+            onClick={() => router.back()}
+            className={styles.iconBtn}
             aria-label="Volver"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
               <path d="M19 12H5M12 5l-7 7 7 7" />
             </svg>
           </button>
-          <span className={styles.topLabel}>Resultado Saluty</span>
-          <button
-            onClick={() => router.push('/scan')}
-            className={styles.newAnalysis}
-          >
+          <span className={styles.topLabel}>Resultado</span>
+          <Link href="/scan" className={styles.newAnalysis}>
             Nuevo
-          </button>
+          </Link>
         </div>
 
-        {/* Score hero */}
         <section className={`${styles.scoreHero} animate-scale-in`}>
           <ScoreRing score={result.salutyScore} color={scoreColor} />
           <div className={styles.scoreInfo}>
@@ -77,7 +73,11 @@ export default function ResultPage() {
               </span>
               <span
                 className={`badge ${styles.processingBadge}`}
-                style={{ color: processingColor, background: `${processingColor}18`, borderColor: `${processingColor}30` }}
+                style={{
+                  color: processingColor,
+                  background: `${processingColor}1f`,
+                  borderColor: `${processingColor}33`,
+                }}
               >
                 {result.processingLevel}
               </span>
@@ -85,14 +85,13 @@ export default function ResultPage() {
           </div>
         </section>
 
-        {/* Nutrition summary */}
         <section className={`glass-card ${styles.section} animate-fade-in`}>
-          <h2 className={styles.sectionTitle}>📊 Análisis nutricional</h2>
+          <h2 className={styles.sectionTitle}>
+            <span aria-hidden>📊</span> Análisis nutricional
+          </h2>
           <p className={styles.sectionText}>{result.nutritionalAnalysis.summary}</p>
 
-          {/* Macro grid */}
-          {(result.nutritionalAnalysis.calories !== undefined ||
-            result.nutritionalAnalysis.protein !== undefined) && (
+          {hasMacros(result) && (
             <div className={styles.macroGrid}>
               {result.nutritionalAnalysis.calories !== undefined && (
                 <MacroChip label="Calorías" value={result.nutritionalAnalysis.calories} unit="kcal" />
@@ -110,19 +109,30 @@ export default function ResultPage() {
                 <MacroChip label="Fibra" value={result.nutritionalAnalysis.fiber} unit="g" color="var(--score-good)" />
               )}
               {result.nutritionalAnalysis.sugar !== undefined && (
-                <MacroChip label="Azúcar" value={result.nutritionalAnalysis.sugar} unit="g" color={result.nutritionalAnalysis.sugar > 10 ? 'var(--score-bad)' : 'var(--text-primary)'} />
+                <MacroChip
+                  label="Azúcar"
+                  value={result.nutritionalAnalysis.sugar}
+                  unit="g"
+                  color={result.nutritionalAnalysis.sugar > 10 ? 'var(--score-bad)' : 'var(--text-primary)'}
+                />
               )}
               {result.nutritionalAnalysis.sodium !== undefined && (
-                <MacroChip label="Sodio" value={result.nutritionalAnalysis.sodium} unit="mg" color={result.nutritionalAnalysis.sodium > 400 ? 'var(--score-bad)' : 'var(--text-primary)'} />
+                <MacroChip
+                  label="Sodio"
+                  value={result.nutritionalAnalysis.sodium}
+                  unit="mg"
+                  color={result.nutritionalAnalysis.sodium > 400 ? 'var(--score-bad)' : 'var(--text-primary)'}
+                />
               )}
             </div>
           )}
         </section>
 
-        {/* Macro Impact (if available) */}
-        {result.macroImpact && (
+        {result.macroImpact && hasImpact(result.macroImpact) && (
           <section className={`glass-card ${styles.section} animate-fade-in`}>
-            <h2 className={styles.sectionTitle}>❤️ Impacto en salud</h2>
+            <h2 className={styles.sectionTitle}>
+              <span aria-hidden>❤️</span> Impacto en tu salud
+            </h2>
             <div className={styles.impactList}>
               {result.macroImpact.cholesterol && (
                 <ImpactRow label="Colesterol" value={result.macroImpact.cholesterol} />
@@ -137,13 +147,14 @@ export default function ResultPage() {
           </section>
         )}
 
-        {/* Problematic ingredients */}
         {result.problematicIngredients.length > 0 && (
           <section className={`glass-card ${styles.section} animate-fade-in`}>
-            <h2 className={styles.sectionTitle}>⚠️ Ingredientes problemáticos</h2>
+            <h2 className={styles.sectionTitle}>
+              <span aria-hidden>⚠️</span> Ingredientes a vigilar
+            </h2>
             <div className={styles.ingredientList}>
               {result.problematicIngredients.map((ing, i) => (
-                <div key={i} className={styles.ingredient}>
+                <div key={i} className={styles.ingredient} style={{ borderLeftColor: getSeverityColor(ing.severity) }}>
                   <div className={styles.ingredientHeader}>
                     <span
                       className={styles.severityDot}
@@ -158,14 +169,15 @@ export default function ResultPage() {
           </section>
         )}
 
-        {/* Healthy alternatives */}
         {result.healthyAlternatives.length > 0 && (
           <section className={`glass-card ${styles.section} animate-fade-in`}>
-            <h2 className={styles.sectionTitle}>🥗 Alternativas más saludables</h2>
+            <h2 className={styles.sectionTitle}>
+              <span aria-hidden>🥗</span> Alternativas más saludables
+            </h2>
             <div className={styles.alternativeList}>
               {result.healthyAlternatives.map((alt, i) => (
                 <div key={i} className={styles.alternative}>
-                  <div className={styles.altIcon}>✓</div>
+                  <div className={styles.altIcon} aria-hidden>✓</div>
                   <div>
                     <p className={styles.altName}>{alt.name}</p>
                     <p className={styles.altReason}>{alt.reason}</p>
@@ -176,18 +188,18 @@ export default function ResultPage() {
           </section>
         )}
 
-        {/* Saluty Tip */}
-        <section className={`${styles.tipSection} animate-fade-in`}>
-          <div className={styles.tipCard}>
-            <div className={styles.tipHeader}>
-              <span className={styles.tipEmoji}>💡</span>
-              <span className={styles.tipTitle}>Consejo Saluty</span>
+        {result.salutyTip && (
+          <section className={`${styles.tipSection} animate-fade-in`}>
+            <div className={styles.tipCard}>
+              <div className={styles.tipHeader}>
+                <span className={styles.tipEmoji} aria-hidden>💡</span>
+                <span className={styles.tipTitle}>Consejo Saluty</span>
+              </div>
+              <p className={styles.tipText}>{result.salutyTip}</p>
             </div>
-            <p className={styles.tipText}>{result.salutyTip}</p>
-          </div>
-        </section>
+          </section>
+        )}
 
-        {/* Share CTA */}
         <div className={styles.ctaRow}>
           <Link href="/scan" className="btn-primary">
             Analizar otro alimento
@@ -199,7 +211,23 @@ export default function ResultPage() {
   );
 }
 
-// Sub-components
+function hasMacros(r: StoredAnalysis): boolean {
+  const n = r.nutritionalAnalysis;
+  return (
+    n.calories !== undefined ||
+    n.protein !== undefined ||
+    n.carbs !== undefined ||
+    n.fat !== undefined ||
+    n.fiber !== undefined ||
+    n.sugar !== undefined ||
+    n.sodium !== undefined
+  );
+}
+
+function hasImpact(m: { cholesterol?: string; triglycerides?: string; bloodSugar?: string }): boolean {
+  return !!(m.cholesterol || m.triglycerides || m.bloodSugar);
+}
+
 function MacroChip({ label, value, unit, color }: { label: string; value: number; unit: string; color?: string }) {
   return (
     <div className={styles.macroChip}>

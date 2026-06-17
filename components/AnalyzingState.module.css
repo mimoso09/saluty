@@ -1,0 +1,213 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-5);
+  padding: var(--space-8) var(--space-4);
+  min-height: 60vh;
+  justify-content: center;
+}
+
+/* Pulsing orb */
+.orb {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.orbCore {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  filter: blur(0.5px);
+  box-shadow: 0 0 32px currentColor;
+  animation: corePulse 1.4s ease-in-out infinite;
+}
+
+.orbRing {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--brand-primary);
+  opacity: 0;
+  animation: ringPulse 1.6s var(--ease-out) infinite;
+}
+
+@keyframes corePulse {
+  0%, 100% { transform: scale(1); opacity: 0.95; }
+  50% { transform: scale(1.18); opacity: 1; }
+}
+
+@keyframes ringPulse {
+  0% { transform: scale(0.45); opacity: 0.65; }
+  100% { transform: scale(1.05); opacity: 0; }
+}
+
+.title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 90%;
+}
+
+.titleLabel {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+}
+
+.titleValue {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.scoreReveal {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.scoreNum {
+  font-size: 56px;
+  font-weight: 800;
+  font-family: var(--font-display);
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.scoreDen {
+  font-size: 18px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.scoreLabel {
+  font-size: 14px;
+  font-weight: 700;
+  margin-left: 10px;
+  letter-spacing: -0.005em;
+}
+
+.metaRow {
+  display: flex;
+  gap: 8px;
+}
+
+.metaPill {
+  padding: 5px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: capitalize;
+}
+
+.summary {
+  max-width: 30ch;
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.fadeIn {
+  animation: stageFade 0.4s var(--ease-out) forwards;
+}
+
+@keyframes stageFade {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.stages {
+  list-style: none;
+  margin-top: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 280px;
+}
+
+.stage {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: opacity var(--transition-base), transform var(--transition-base);
+}
+
+.stage.pending { opacity: 0.4; }
+.stage.active { opacity: 1; }
+.stage.done { opacity: 0.85; }
+
+.stageDot {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-medium);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--brand-primary);
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.stage.active .stageDot {
+  border-color: var(--brand-primary);
+  background: var(--brand-primary-dim);
+  animation: dotPulse 1s ease-in-out infinite;
+}
+
+.stage.done .stageDot {
+  background: var(--brand-primary);
+  border-color: var(--brand-primary);
+  color: #03261d;
+  font-weight: 700;
+}
+
+@keyframes dotPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 212, 170, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(0, 212, 170, 0); }
+}
+
+.stageText {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.stageLabel {
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+.stageDetail {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.cancelBtn {
+  margin-top: var(--space-2);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13.5px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  transition: color var(--transition-fast);
+}
+
+.cancelBtn:hover { color: var(--text-primary); }

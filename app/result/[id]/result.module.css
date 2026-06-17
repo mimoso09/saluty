@@ -4,7 +4,7 @@
   align-items: center;
   justify-content: center;
   min-height: 80vh;
-  gap: var(--space-md);
+  gap: var(--space-4);
   color: var(--text-secondary);
   font-size: 15px;
 }
@@ -12,8 +12,7 @@
 .result {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
-  padding-bottom: 120px;
+  gap: var(--space-5);
 }
 
 /* Top bar */
@@ -21,10 +20,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: var(--space-sm);
+  padding-top: var(--space-1);
 }
 
-.backBtn {
+.iconBtn {
   width: 40px;
   height: 40px;
   display: flex;
@@ -34,20 +33,22 @@
   border: 1px solid var(--border-subtle);
   border-radius: 50%;
   color: var(--text-primary);
-  transition: all var(--transition-fast);
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+  cursor: pointer;
 }
 
-.backBtn:hover {
+.iconBtn:hover {
   background: var(--bg-card-hover);
   border-color: var(--border-medium);
 }
+.iconBtn:active { transform: scale(0.94); }
 
 .topLabel {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--text-secondary);
+  letter-spacing: 0.12em;
+  color: var(--text-tertiary);
 }
 
 .newAnalysis {
@@ -57,15 +58,19 @@
   padding: 8px 16px;
   background: var(--brand-primary-dim);
   border-radius: var(--radius-full);
+  border: 1px solid var(--border-brand);
+  transition: background var(--transition-fast);
 }
+
+.newAnalysis:hover { background: rgba(0, 212, 170, 0.22); }
 
 /* Score Hero */
 .scoreHero {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-md);
-  padding: var(--space-xl) 0;
+  gap: var(--space-4);
+  padding: var(--space-6) 0 var(--space-2);
 }
 
 .scoreInfo {
@@ -73,45 +78,52 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  max-width: 320px;
 }
 
 .productName {
   font-size: 24px;
   font-weight: 800;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
 }
 
 .scoreMeta {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .scoreLabel {
   font-weight: 700;
   font-size: 15px;
+  letter-spacing: -0.01em;
 }
 
-.processingBadge {
-  border: 1px solid;
-}
+.processingBadge { border: 1px solid; }
 
 /* Sections */
 .section {
-  padding: var(--space-lg);
+  padding: var(--space-5) var(--space-5);
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: var(--space-3);
 }
 
 .sectionTitle {
   font-size: 16px;
   font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: -0.015em;
 }
 
 .sectionText {
-  font-size: 15px;
+  font-size: 14.5px;
   color: var(--text-secondary);
   line-height: 1.6;
 }
@@ -120,8 +132,8 @@
 .macroGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-sm);
-  margin-top: 8px;
+  gap: var(--space-2);
+  margin-top: 4px;
 }
 
 .macroChip {
@@ -129,7 +141,7 @@
   flex-direction: column;
   align-items: center;
   background: var(--bg-input);
-  padding: 12px 8px;
+  padding: var(--space-3) var(--space-2);
   border-radius: var(--radius-md);
   border: 1px solid var(--border-subtle);
 }
@@ -138,36 +150,41 @@
   font-size: 20px;
   font-weight: 700;
   font-family: var(--font-display);
+  letter-spacing: -0.02em;
 }
 
 .macroUnit {
   font-size: 12px;
   margin-left: 2px;
   font-family: var(--font-body);
+  font-weight: 500;
+  opacity: 0.7;
 }
 
 .macroLabel {
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--text-tertiary);
   margin-top: 4px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
+  font-weight: 600;
 }
 
-/* Impact list */
+/* Impact */
 .impactList {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .impactRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px;
+  padding: var(--space-3) var(--space-4);
   background: var(--bg-input);
   border-radius: var(--radius-md);
+  gap: var(--space-3);
 }
 
 .impactLabel {
@@ -176,7 +193,7 @@
 }
 
 .impactValue {
-  font-size: 14px;
+  font-size: 13.5px;
   color: var(--text-secondary);
   text-align: right;
 }
@@ -185,14 +202,14 @@
 .ingredientList {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .ingredient {
-  padding: 12px 16px;
+  padding: var(--space-3) var(--space-4);
   background: var(--bg-input);
   border-radius: var(--radius-md);
-  border-left: 3px solid var(--bg-card-hover);
+  border-left: 3px solid var(--border-medium);
 }
 
 .ingredientHeader {
@@ -206,15 +223,17 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .ingredientName {
   font-weight: 600;
-  font-size: 15px;
+  font-size: 14.5px;
+  letter-spacing: -0.005em;
 }
 
 .ingredientReason {
-  font-size: 14px;
+  font-size: 13.5px;
   color: var(--text-secondary);
   line-height: 1.5;
   margin-left: 16px;
@@ -224,23 +243,23 @@
 .alternativeList {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .alternative {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 12px 16px;
-  background: var(--bg-input);
-  border: 1px solid var(--score-good);
+  padding: var(--space-3) var(--space-4);
+  background: rgba(34, 197, 94, 0.06);
+  border: 1px solid rgba(34, 197, 94, 0.28);
   border-radius: var(--radius-md);
 }
 
 .altIcon {
-  width: 24px;
-  height: 24px;
-  background: rgba(34, 197, 94, 0.2);
+  width: 26px;
+  height: 26px;
+  background: rgba(34, 197, 94, 0.22);
   color: var(--score-good);
   border-radius: 50%;
   display: flex;
@@ -253,43 +272,44 @@
 
 .altName {
   font-weight: 600;
-  font-size: 15px;
+  font-size: 14.5px;
   color: var(--score-good);
+  letter-spacing: -0.005em;
 }
 
 .altReason {
-  font-size: 14px;
+  font-size: 13.5px;
   color: var(--text-secondary);
-  margin-top: 4px;
-  line-height: 1.4;
+  margin-top: 3px;
+  line-height: 1.45;
 }
 
 /* Tip card */
 .tipSection {
-  margin-top: var(--space-md);
+  margin-top: var(--space-2);
 }
 
 .tipCard {
-  background: linear-gradient(135deg, var(--brand-primary-dim), rgba(124, 58, 237, 0.15));
+  background: linear-gradient(135deg, rgba(0, 212, 170, 0.15), rgba(124, 58, 237, 0.12));
   border: 1px solid var(--border-brand);
   border-radius: var(--radius-lg);
-  padding: var(--space-lg);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-card);
 }
 
 .tipHeader {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
-.tipEmoji {
-  font-size: 20px;
-}
+.tipEmoji { font-size: 20px; line-height: 1; }
 
 .tipTitle {
   font-size: 16px;
   font-weight: 700;
+  letter-spacing: -0.015em;
   background: var(--brand-gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -297,11 +317,10 @@
 }
 
 .tipText {
-  font-size: 15px;
+  font-size: 14.5px;
   line-height: 1.6;
 }
 
-/* CTA Row */
 .ctaRow {
-  margin-top: var(--space-md);
+  margin-top: var(--space-2);
 }

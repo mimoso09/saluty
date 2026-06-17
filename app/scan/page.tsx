@@ -2,52 +2,42 @@
 // ============================================================
 // Saluty — Scan Page (Food Analyzer)
 // ============================================================
-import { useState, useRef, useCallback, Suspense } from 'react';
+import { useState, useRef, useCallback, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import AuthGuard from '@/components/AuthGuard';
 import BarcodeScanner, { type ScanPayload } from '@/components/BarcodeScanner';
+import AnalyzingState from '@/components/AnalyzingState';
+import { saveAnalysis } from '@/lib/history';
+import { streamAnalyze } from '@/lib/streamAnalyze';
+import { useUser } from '@/lib/auth';
 import styles from './scan.module.css';
-import type { AnalysisResult, InputType } from '@/types/analysis';
+import type { InputType } from '@/types/analysis';
 
 type Tab = 'barcode' | 'image' | 'text' | 'ingredients' | 'nutrition_table';
 
 const TABS: { id: Tab; label: string; emoji: string; placeholder: string }[] = [
-  {
-    id: 'barcode',
-    label: 'Escanear',
-    emoji: '📷',
-    placeholder: '',
-  },
-  {
-    id: 'image',
-    label: 'Foto',
-    emoji: '🖼️',
-    placeholder: '',
-  },
-  {
-    id: 'text',
-    label: 'Texto',
-    emoji: '✏️',
-    placeholder: 'Ej: Leche entera Lala, Coca-Cola 600ml, Doritos Nacho...',
-  },
-  {
-    id: 'ingredients',
-    label: 'Ingredientes',
-    emoji: '📋',
-    placeholder: 'Pega la lista completa de ingredientes del producto...',
-  },
-  {
-    id: 'nutrition_table',
-    label: 'Tabla',
-    emoji: '📊',
-    placeholder: 'Pega la tabla nutrimental: calorías, proteínas, carbohidratos, grasas, sodio...',
-  },
+  { id: 'barcode', label: 'Escanear', emoji: '📷', placeholder: '' },
+  { id: 'image', label: 'Foto', emoji: '🖼️', placeholder: '' },
+  { id: 'text', label: 'Texto', emoji: '✏️', placeholder: 'Ej: Leche entera Lala, Coca-Cola 600 ml, Doritos Nacho…' },
+  { id: 'ingredients', label: 'Ingredientes', emoji: '📋', placeholder: 'Pega la lista completa de ingredientes del producto…' },
+  { id: 'nutrition_table', label: 'Tabla', emoji: '📊', placeholder: 'Pega la tabla nutrimental: calorías, proteínas, carbohidratos, grasas, sodio…' },
 ];
+
+const TIPS: Record<Tab, string> = {
+  barcode: 'Apunta al código de barras. Combinamos el código, la base de datos y la foto para más precisión.',
+  image: 'Para mejor análisis, fotografía la etiqueta trasera con los ingredientes.',
+  text: 'Incluye marca y presentación. Ejemplo: "Yogurt griego Danone 0 % sin azúcar".',
+  ingredients: 'Pega los ingredientes tal como aparecen en el envase, con aditivos y cantidades.',
+  nutrition_table: 'Incluye toda la tabla: calorías, proteínas, carbohidratos, grasas, azúcares y sodio.',
+};
+
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5 MB
 
 function ScanContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user } = useUser();
   const initialTab = (searchParams.get('tab') as Tab) || 'barcode';
 
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
@@ -60,18 +50,34 @@ function ScanContent() {
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [requestingCamera, setRequestingCamera] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [streamingPartial, setStreamingPartial] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  // Cleanup camera stream if the page is unmounted while scanning
+  useEffect(() => {
+    return () => {
+      cameraStream?.getTracks().forEach((t) => t.stop());
+    };
+  }, [cameraStream]);
 
   const handleImageSelect = useCallback((file: File) => {
-    if (!file.type.startsWith('image/')) return;
+    setError(null);
+    if (!file.type.startsWith('image/')) {
+      setError('Selecciona un archivo de imagen (JPG, PNG o WebP).');
+      return;
+    }
+    if (file.size > MAX_IMAGE_SIZE) {
+      setError('La imagen supera los 5 MB. Usa una más pequeña.');
+      return;
+    }
     setImageMime(file.type);
     const reader = new FileReader();
     reader.onload = (e) => {
       const result = e.target?.result as string;
       setImagePreview(result);
-      const base64 = result.split(',')[1];
-      setImageBase64(base64);
+      setImageBase64(result.split(',')[1]);
     };
     reader.readAsDataURL(file);
   }, []);
@@ -92,16 +98,18 @@ function ScanContent() {
     setImagePreview(`data:${payload.mimeType};base64,${payload.imageBase64}`);
     setScannerOpen(false);
     setCameraStream((prev) => {
-      if (prev) prev.getTracks().forEach((t) => t.stop());
+      prev?.getTracks().forEach((t) => t.stop());
       return null;
     });
   }, []);
 
   const closeScanner = useCallback(() => {
     setScannerOpen(false);
-    if (cameraStream) cameraStream.getTracks().forEach((t) => t.stop());
-    setCameraStream(null);
-  }, [cameraStream]);
+    setCameraStream((prev) => {
+      prev?.getTracks().forEach((t) => t.stop());
+      return null;
+    });
+  }, []);
 
   const openCamera = useCallback(async () => {
     setError(null);
@@ -112,7 +120,11 @@ function ScanContent() {
     setRequestingCamera(true);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
         audio: false,
       });
       setCameraStream(stream);
@@ -120,9 +132,13 @@ function ScanContent() {
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'No se pudo acceder a la cámara';
       let friendly = msg;
-      if (/permission|denied|notallowed/i.test(msg)) friendly = 'Permiso de cámara denegado. Abre Ajustes de Safari → Cámara → Permitir.';
-      else if (/notfound|devicesnotfound/i.test(msg)) friendly = 'No se detectó cámara en este dispositivo.';
-      else if (/secure|https/i.test(msg)) friendly = 'La cámara requiere HTTPS. Usa el enlace HTTPS, no HTTP.';
+      if (/permission|denied|notallowed/i.test(msg)) {
+        friendly = 'Permiso de cámara denegado. Habilítalo en los ajustes de tu navegador.';
+      } else if (/notfound|devicesnotfound/i.test(msg)) {
+        friendly = 'No se detectó cámara en este dispositivo.';
+      } else if (/secure|https/i.test(msg)) {
+        friendly = 'La cámara requiere HTTPS. Abre la app desde un enlace seguro.';
+      }
       setError(friendly);
     } finally {
       setRequestingCamera(false);
@@ -150,51 +166,66 @@ function ScanContent() {
         setError('Escanea un código o captura una foto antes de analizar.');
         return;
       }
-      if (barcodeValue) {
-        body = {
-          type: 'barcode',
-          content: imageBase64 || '',
-          mimeType: imageMime,
-          barcode: barcodeValue,
-        };
-      } else {
-        body = { type: 'image', content: imageBase64!, mimeType: imageMime };
-      }
+      body = barcodeValue
+        ? { type: 'barcode', content: imageBase64 || '', mimeType: imageMime, barcode: barcodeValue }
+        : { type: 'image', content: imageBase64!, mimeType: imageMime };
     } else if (activeTab === 'image') {
       if (!imageBase64) {
-        setError('Por favor selecciona una imagen.');
+        setError('Selecciona o toma una foto del producto.');
         return;
       }
       body = { type: 'image', content: imageBase64, mimeType: imageMime };
     } else {
       if (!textContent.trim()) {
-        setError('Por favor ingresa información para analizar.');
+        setError('Ingresa información del alimento antes de continuar.');
         return;
       }
-      body = { type: activeTab, content: textContent };
+      body = { type: activeTab, content: textContent.trim() };
     }
 
     setIsLoading(true);
+    setStreamingPartial('');
+    abortRef.current = new AbortController();
     try {
-      const res = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Análisis falló');
-      const result: AnalysisResult = data.result;
-      sessionStorage.setItem('saluty_result', JSON.stringify(result));
-      router.push('/result/latest');
+      const result = await streamAnalyze(
+        { ...body, userId: user?.id },
+        {
+          onProgress: (partial) => setStreamingPartial(partial),
+        },
+        abortRef.current.signal
+      );
+      const stored = saveAnalysis(result);
+      router.push(`/result/${stored.id}`);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Error al analizar';
-      setError(msg);
-    } finally {
+      if ((err as Error).name === 'AbortError') {
+        setError(null);
+      } else {
+        const msg = err instanceof Error ? err.message : 'Error al analizar';
+        setError(msg);
+      }
       setIsLoading(false);
     }
   };
 
+  const cancelAnalysis = () => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setIsLoading(false);
+    setStreamingPartial('');
+  };
+
   const currentTab = TABS.find((t) => t.id === activeTab)!;
+
+  if (isLoading) {
+    return (
+      <>
+        <main className={`page-content ${styles.scan}`}>
+          <AnalyzingState partial={streamingPartial} onCancel={cancelAnalysis} />
+        </main>
+        <Navigation />
+      </>
+    );
+  }
 
   return (
     <>
@@ -204,16 +235,19 @@ function ScanContent() {
           <p className={styles.subtitle}>¿Qué vas a evaluar hoy?</p>
         </header>
 
-        <div className={styles.tabs} role="tablist">
+        <div className={styles.tabs} role="tablist" aria-label="Tipo de análisis">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               role="tab"
               aria-selected={activeTab === tab.id}
               className={`${styles.tab} ${activeTab === tab.id ? styles.tabActive : ''}`}
-              onClick={() => { setActiveTab(tab.id); setError(null); }}
+              onClick={() => {
+                setActiveTab(tab.id);
+                setError(null);
+              }}
             >
-              <span>{tab.emoji}</span>
+              <span className={styles.tabEmoji} aria-hidden>{tab.emoji}</span>
               <span>{tab.label}</span>
             </button>
           ))}
@@ -225,14 +259,15 @@ function ScanContent() {
               <BarcodeScanner stream={cameraStream} onScan={handleScannerResult} onCancel={closeScanner} />
             ) : imagePreview ? (
               <div className={styles.scanResult}>
-                <img src={imagePreview} alt="Captura" className={styles.imagePreview} />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={imagePreview} alt="Captura del producto" className={styles.imagePreview} />
                 <div className={styles.scanResultMeta}>
                   {barcodeValue ? (
-                    <p>
+                    <p className={styles.scanResultText}>
                       <strong>Código:</strong> {barcodeValue}
                     </p>
                   ) : (
-                    <p className={styles.imageHint}>Foto capturada (sin código de barras)</p>
+                    <p className={styles.scanResultText}>Foto capturada (sin código de barras)</p>
                   )}
                   <div className={styles.scanResultActions}>
                     <button type="button" className={styles.linkBtn} onClick={() => { resetScan(); openCamera(); }}>
@@ -243,7 +278,7 @@ function ScanContent() {
               </div>
             ) : (
               <button type="button" className={styles.openScanner} onClick={openCamera} disabled={requestingCamera}>
-                <div className={styles.imageIcon}>📷</div>
+                <div className={styles.imageIcon} aria-hidden>📷</div>
                 <p className={styles.imageTitle}>{requestingCamera ? 'Solicitando permiso…' : 'Abrir cámara'}</p>
                 <p className={styles.imageHint}>Apunta al código de barras del producto</p>
               </button>
@@ -257,22 +292,29 @@ function ScanContent() {
               role="button"
               tabIndex={0}
               aria-label="Seleccionar imagen"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  fileInputRef.current?.click();
+                }
+              }}
             >
               {imagePreview ? (
                 <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={imagePreview} alt="Vista previa" className={styles.imagePreview} />
                   <div className={styles.imageOverlay}>
-                    <span>Cambiar imagen</span>
+                    <span>Tocar para cambiar</span>
                   </div>
                 </>
               ) : (
                 <div className={styles.imageEmpty}>
-                  <div className={styles.imageIcon}>🖼️</div>
+                  <div className={styles.imageIcon} aria-hidden>🖼️</div>
                   <p className={styles.imageTitle}>Sube una foto</p>
                   <p className={styles.imageHint}>
                     Arrastra una imagen o toca para seleccionar
                   </p>
-                  <p className={styles.imageFormats}>JPG, PNG, WebP • máx 5MB</p>
+                  <p className={styles.imageFormats}>JPG, PNG o WebP • máx 5 MB</p>
                 </div>
               )}
               <input
@@ -281,7 +323,11 @@ function ScanContent() {
                 accept="image/*"
                 capture="environment"
                 style={{ display: 'none' }}
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageSelect(f); }}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleImageSelect(f);
+                  e.target.value = '';
+                }}
               />
             </div>
           ) : (
@@ -292,24 +338,20 @@ function ScanContent() {
               onChange={(e) => setTextContent(e.target.value)}
               rows={6}
               id="food-input"
+              aria-label={currentTab.label}
             />
           )}
         </div>
 
         <div className={`glass-card ${styles.tipBox}`}>
-          <span className={styles.tipIcon}>💡</span>
-          <p className={styles.tipText}>
-            {activeTab === 'barcode' && 'Apunta al código de barras. Combinamos el código, datos del producto y la foto para un análisis más preciso.'}
-            {activeTab === 'image' && 'Usa foto de la etiqueta trasera con los ingredientes para mejor análisis.'}
-            {activeTab === 'text' && 'Incluye la marca y presentación. Ej: "Yogurt griego Danone 0% sin azúcar".'}
-            {activeTab === 'ingredients' && 'Pega exactamente como aparece en el envase, incluyendo aditivos y cantidades.'}
-            {activeTab === 'nutrition_table' && 'Incluye toda la tabla: calorías, proteínas, carbohidratos, grasas, azúcares y sodio.'}
-          </p>
+          <span className={styles.tipIcon} aria-hidden>💡</span>
+          <p className={styles.tipText}>{TIPS[activeTab]}</p>
         </div>
 
         {error && (
-          <div className={styles.errorMsg}>
-            <span>⚠️</span> {error}
+          <div className={styles.errorMsg} role="alert">
+            <span aria-hidden>⚠️</span>
+            <span>{error}</span>
           </div>
         )}
 
@@ -317,21 +359,12 @@ function ScanContent() {
           id="analyze-btn"
           className="btn-primary"
           onClick={handleAnalyze}
-          disabled={isLoading}
+          type="button"
         >
-          {isLoading ? (
-            <>
-              <div className="spinner" />
-              Analizando con IA...
-            </>
-          ) : (
-            <>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-              </svg>
-              Obtener mi Score Saluty
-            </>
-          )}
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+          </svg>
+          Obtener mi Score Saluty
         </button>
       </main>
       <Navigation />
@@ -342,7 +375,13 @@ function ScanContent() {
 export default function ScanPage() {
   return (
     <AuthGuard>
-      <Suspense fallback={<div className="page-content" style={{display:'flex',alignItems:'center',justifyContent:'center',height:'80vh',color:'var(--text-muted)'}}>Cargando...</div>}>
+      <Suspense
+        fallback={
+          <div className="page-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+            <div className="spinner spinner-lg" />
+          </div>
+        }
+      >
         <ScanContent />
       </Suspense>
     </AuthGuard>

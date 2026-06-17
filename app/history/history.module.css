@@ -1,17 +1,17 @@
 .history {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xl);
+  gap: var(--space-6);
 }
 
 .header {
-  padding-top: var(--space-sm);
+  padding-top: var(--space-1);
 }
 
 .title {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
 }
 
 .subtitle {
@@ -26,60 +26,89 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 60px 20px;
-  gap: 12px;
+  padding: 80px 24px;
+  gap: 14px;
 }
 
 .emptyIcon {
-  font-size: 48px;
-  margin-bottom: 8px;
+  font-size: 52px;
+  margin-bottom: 6px;
+  opacity: 0.85;
 }
 
 .emptyTitle {
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 700;
+  letter-spacing: -0.015em;
 }
 
 .emptyDesc {
   font-size: 15px;
   color: var(--text-secondary);
-  max-width: 280px;
+  max-width: 300px;
   line-height: 1.5;
+}
+
+.groupList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
 }
 
 .historyList {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .historyCard {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
-  transition: all var(--transition-fast);
+  padding: var(--space-4);
+  transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+  gap: var(--space-3);
 }
 
 .historyCard:hover {
-  transform: translateX(4px);
-  border-color: var(--border-brand);
+  background: var(--bg-card-hover);
+  border-color: var(--border-medium);
 }
+
+.historyCard:active { transform: scale(0.99); }
 
 .cardLeft {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
+  flex: 1;
 }
 
 .productName {
-  font-size: 16px;
+  font-size: 15.5px;
   font-weight: 600;
+  letter-spacing: -0.015em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .date {
-  font-size: 13px;
-  color: var(--text-muted);
+  font-size: 12.5px;
+  color: var(--text-tertiary);
+  text-transform: capitalize;
+}
+
+.cardRight {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .scoreBadge {
@@ -87,15 +116,37 @@
   align-items: baseline;
   padding: 6px 12px;
   border-radius: var(--radius-full);
+  border: 1px solid;
 }
 
 .scoreNum {
   font-size: 18px;
   font-weight: 800;
   font-family: var(--font-display);
+  letter-spacing: -0.02em;
 }
 
 .scoreDen {
   font-size: 11px;
-  opacity: 0.7;
+  opacity: 0.75;
+  font-weight: 600;
+  margin-left: 1px;
+}
+
+.deleteBtn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: 50%;
+  transition: background var(--transition-fast), color var(--transition-fast);
+  cursor: pointer;
+}
+
+.deleteBtn:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--score-terrible);
 }

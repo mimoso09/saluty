@@ -9,13 +9,32 @@ function readUrl(): string | null {
   return u;
 }
 
+function readAnonKey(): string | null {
+  const k = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  return k && k.trim().length > 0 ? k : null;
+}
+
+/**
+ * Public flag (safe to call from client) — true if both URL and anon key are present.
+ * Used to decide whether to use Supabase-backed auth/history or localStorage fallback.
+ */
+export function isSupabaseConfigured(): boolean {
+  return readUrl() !== null && readAnonKey() !== null;
+}
+
 let cachedAnon: SupabaseClient | null = null;
 export function getSupabase(): SupabaseClient | null {
   if (cachedAnon) return cachedAnon;
   const url = readUrl();
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const key = readAnonKey();
   if (!url || !key) return null;
-  cachedAnon = createClient(url, key);
+  cachedAnon = createClient(url, key, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: false,
+    },
+  });
   return cachedAnon;
 }
 
@@ -26,7 +45,10 @@ export function getSupabase(): SupabaseClient | null {
 export const supabase = new Proxy({} as SupabaseClient, {
   get(_t, prop) {
     const real = getSupabase();
-    if (!real) throw new Error('Supabase is not configured (set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY)');
+    if (!real)
+      throw new Error(
+        'Supabase is not configured (set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY)'
+      );
     return Reflect.get(real, prop as keyof SupabaseClient);
   },
 });

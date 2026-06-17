@@ -1,16 +1,20 @@
 import type { Metadata, Viewport } from 'next';
 import '@/app/globals.css';
+import ServiceWorkerRegister from '@/components/ServiceWorkerRegister';
+import SplashScreen from '@/components/SplashScreen';
 
 export const metadata: Metadata = {
   title: 'Saluty — Evalúa tu comida con IA',
   description:
     'Sube fotos, pega ingredientes o describe tu comida y recibe un análisis nutricional con IA. Tu asistente inteligente de salud.',
   keywords: ['nutrición', 'salud', 'IA', 'análisis nutricional', 'ultraprocesados'],
-  manifest: '/manifest.json',
-  icons: {
-    icon: '/icon.svg',
-    apple: '/apple-touch-icon.png',
+  applicationName: 'Saluty',
+  appleWebApp: {
+    capable: true,
+    title: 'Saluty',
+    statusBarStyle: 'black-translucent',
   },
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {
@@ -18,7 +22,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#0a0a0f',
+  themeColor: '#06070a',
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({
@@ -29,9 +34,9 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body>
-        <div className="app-wrapper">
-          {children}
-        </div>
+        <div className="app-wrapper">{children}</div>
+        <SplashScreen />
+        <ServiceWorkerRegister />
       </body>
     </html>
   );
